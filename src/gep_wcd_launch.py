@@ -26,22 +26,24 @@ def gep_wcd_launch(grd_dir, domain_name):
     wcd_results_filename = "grd_log_reduction.txt"
     wcd_results_filepath = os.path.join(log_files_path, wcd_results_filename)
 
-    for problem_dir in ['p05']:#problem_dirs:
+    for problem_dir in problem_dirs:
 	#print(problem_dirs)
         problem_name = os.path.basename(problem_dir).split(".")[0]
         problem_path = os.path.join(gep_data_path, problem_name)
 
-        #execute string
-        exec_string = "./scripts/grd_evaluator_reduce " + os.path.join(gep_data_path, "domain.pddl") +" "+ os.path.join(problem_path, "template.pddl") + " " + os.path.join(problem_path, "hyps.dat") + " LatestSplit 1 NA NA True max NA"
-#        grd_evaluator.main(["grd_evaluator_reduce", os.path.join(gep_data_path, "domain.pddl"), os.path.join(problem_path, "template.pddl"), os.path.join(problem_path, "hyps.dat"), "LatestSplit", "1", "NA", "NA", "True", "max", "NA"])
+        #TODO this block can probably be removed
+	#execute string
+        #exec_string = "./scripts/grd_evaluator_reduce " + os.path.join(gep_data_path, "domain.pddl") +" "+ os.path.join(problem_path, "template.pddl") + " " + os.path.join(problem_path, "hyps.dat") + " LatestSplit 1 NA NA True max NA"
+	#grd_evaluator.main(["grd_evaluator_reduce", os.path.join(gep_data_path, "domain.pddl"), os.path.join(problem_path, "template.pddl"), os.path.join(problem_path, "hyps.dat"), "LatestSplit", "1", "NA", "NA", "True", "max", "NA"])
         #exec_string = ["grd_evaluator_reduce", os.path.join(gep_data_path, "domain.pddl"), os.path.join(problem_path, "template.pddl"), os.path.join(problem_path, "hyps.dat"), "LatestSplit", "1", "NA", "NA", "True", "max", "NA"]
 	print(exec_string)
 	#subprocess.call(exec_string,cwd=grd_dir+"/scripts")
         
-	#TODO refactor the above to call the python function directly
+	#TODO below doesn't work and issue #1 on this repo refers to the error from .main() below
+	#TODO also check the harded coded params below to make sure they are correct
         #python3 ./src/grd_evaluator.py -o $1 -p $2 -y $3 -c $4 -g $5 -b $6 -u $7 -f $8 -v $9 -a ${10}
 	exec_array = ["WcdReduce", "-o", os.path.join(gep_data_path, "domain.pddl"), "-p", os.path.join(problem_path, "template.pddl"), "-y", os.path.join(problem_path, "hyps.dat"), "-c", "LatestSplit", "-g", "1", "-b", "NA", "-u", "NA", "-f", "True", "-v", "max", "-a", "NA"]
-	#grd_evaluator.main(exec_array)
+	grd_evaluator.main(exec_array)
 
         #move results and rename with timestamp
         timestr = time.strftime("%Y%m%d_%H%M%S")
