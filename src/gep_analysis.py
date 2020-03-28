@@ -187,23 +187,24 @@ def gep_wcd_analysis(data_folder, data_file, domain_file, problem_file):
 
 if __name__=="__main__": 
     if False:#len(sys.argv) < 5:
-        print("Usage: gep_analysis data_folder data_filename domain_filename problem_filename")
+        print("Usage: gep_analysis data_folder data_filename domain_filename hyp_problem_prefix")
         sys.exit()
     else:
         data_folder = sys.argv[1]
         data_filename = sys.argv[2]
         domain_filename = sys.argv[3]
-        problem_filename = sys.argv[4]
+        hyp_problem_prefix = sys.argv[4]
 
-#        data_folder = ".\\"
-#        data_filename = "grd_log_reduction.txt"
-#        domain_filename = "domain.pddl"
-#        problem_filename = "hyp_0_problem.pddl"
-        
-        #run the gep analysis pipeline
-        gep_wcd_analysis = gep_wcd_analysis(data_folder, data_filename, domain_filename, problem_filename)
-        
+        gep_wcd_analysis_df = pd.DataFrame()
+	#iterate through all the hypothesis problem files
+        for problem_filename in os.listdir(data_folder):
+            if(problem_filename.endswith("pddl") and problem_filename[:len(hyp_problem_prefix)] == hyp_problem_prefix):
+                #run the gep analysis pipeline
+                single_hyp_gep_wcd_analysis = gep_wcd_analysis(data_folder, data_filename, domain_filename, problem_filename)
+                gep_wcd_analysis_df = pd.concat([gep_wcd_analysis_df, single_hyp_gep_wcd_analysis])
+
         #Output to csv
-        output_filename = "gep_" + problem_filename.split(".")[0] + ".csv"
+	#TODO filter columns, too much junk there now
+        output_filename = "gep_" + hyp_problem_prefix + "_all.csv"
         print(os.path.join(data_folder, output_filename))
-        gep_wcd_analysis.to_csv( os.path.join(data_folder, output_filename) )        
+        gep_wcd_analysis_df.to_csv( os.path.join(data_folder, output_filename) )        
