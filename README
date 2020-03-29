@@ -2,14 +2,24 @@
 Objective:
 =========
 
-Goal recognition design (GRD) is the task of redesigning environments in order to facilitate online goal recognition. As such, while goal recognition tools are typically aimed at efficiently analyzing online observations of agents (human or automated) in order to infer their objective, GRD focuses on manipulating the environment in which agents act to guarantee early recognition. 
+Goal Elicitation Planning (GEP) is the task of acting in an environment using Goal Recognition Design information (e.g. WCD) to faciliate online goal recognition.
 
-In a nutshell, given a model of a domain and a set of possible goals, a solution to a GRD problem determines: (1) to what extent do actions, performed by an agent within the model, reveal the agent’s objective? and (2) what is the best way to modify the model so that the objective of an agent is revealed as early as possible? GRD answers these questions by offering a solution for assessing and minimizing the maximal progress of an agent in the model before its goal is revealed. This approach is relevant to any domain for which quickly performing goal recognition is essential and in which the model design can be controlled. Applications include intrusion detection, assisted cognition, computer games, and human-robot collaboration.
+GEP Code structure:
+==============
+Step 0: Install fast-downward in src/3rdparty/downward, install pandas package in python
+Step 1: Ensure your domain has actions that contain preconditions that can be negated by other actions. This ensures actions taken by one agent can blok another agent.
+Step 2: Modify domain.pddl and template.pddl, possibly hyp_X_problem.pddl if using from bencmarks folder
+Step 3: Run grd_evaluator with only aciton removal design mods on each domain-problem pair, make copies of grd_log_reduction.txt between each run (or fix gep_wcd_launch to do this all automatically)
+Step 4: Run gep_analysis.py to analyze the results in grd_log_reduction.txt (may now hav a time prefix if copied using script) for each hypothesis problem
+Step 5: Take a look at the gep_hyp_all.csv to see if online actions can achieve the same WCD reduction as GRD(above step will eventually generate a summary file)
 
-To learn more about GRD see our list of publications at : http://sarahkeren.wixsite.com/sarahkeren-academics/publications
+Note: currently only gep/data/easy-grid-problem/p0X has modificatons made to the domain that allows GEP to run successfully. So only run the above steps using the domain/problems found there, OK?
 
+==============
+What follows below is from the GRD repo and may be useful.....
+==============
 
-Code structure:
+GRD Code structure:
 ==============
 
 The distributed code contains 3 parts:
