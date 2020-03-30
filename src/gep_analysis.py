@@ -36,19 +36,20 @@ def analyze_wcd(col_names, data_folder, data_filename, domain_filename, problem_
     
     #parse and extract the action removal design modification from the unholy mess
     action_remove_index = 0
-    wcd_df['action_removed'] = wcd_df["op_comb.getString()"].str.replace("[","").str.replace("]","").str.split("--", expand=True)[action_remove_index].str.strip()
-    wcd_df["domain"] = domain_filename
-    wcd_df["problem"] = problem_filename
+    wcd_df["action_removed"] = "(" + wcd_df["op_comb.getString()"].str.replace("[","").str.replace("]","").str.split("--", expand=True)[action_remove_index].str.strip() + ")"
+    wcd_df["problem"] = os.path.basename(os.path.dirname(data_folder))
+    wcd_df["domain"] = os.path.basename(os.path.dirname(os.path.dirname(data_folder)))
+    wcd_df["domain_filename"] = domain_filename
+    wcd_df["problem_filename"] = problem_filename
     
     #extract hypothesis
-    wcd_df[["hyp_0","hyp_1"]] =  wcd_df["init_wcd_hyps"].str.split("'", expand=True)[[1,3]]
+    wcd_df[["hyp_A","hyp_B"]] =  wcd_df["init_wcd_hyps"].str.split("'", expand=True)[[1,3]]
     
     #get the goal from the planning problem
     #problem_goals = get_problem_goals(os.path.join(data_folder, problem_filename))
     
-    #TODO make sure remainder of logical statement is needed/works
-    #only return rows that have an action removal design mod for the correct hypothesis-problem combination
-    return_df = wcd_df[ (wcd_df["action_removed"] != "")]# & ((wcd_df["hyp_0"].isin(problem_goals)) | (wcd_df["hyp_1"].isin(problem_goals))) ]
+    #only return rows that have an action removal design mod
+    return_df = wcd_df[ (wcd_df["action_removed"] != "()")]
     
     #TODO may want to filter out action removals that are equal to the min WCD for this problem
     return return_df
@@ -66,7 +67,7 @@ def generate_gep_problem(row, data_folder):
     problem_filename = os.path.join(data_folder, row[1])
     gep_action_removed  = row[2]
     
-    gep_problem_filestring = "gep_" + gep_action_removed.strip().replace(" ","_") + "_" + row[1]
+    gep_problem_filestring = "gep_" + gep_action_removed.strip().replace(" ","_").replace("(", "").replace(")", "")# + "_" + row[1]
     gep_problem_filename = os.path.join(data_folder, gep_problem_filestring)
     in_init = True
     
@@ -86,12 +87,10 @@ def generate_gep_problem(row, data_folder):
     return gep_problem_filestring
 
 
-def negated_action_preconditions_to_pddl_string(action, domain_filename, problem_filename):
+def negated_action_preconditions_to_pddl_string(action_removed, domain_filename, problem_filename):
     
     pddl_string = ""
     found_operator = False
-    #TODO add brackets in stored action name?
-    action_removed = "(" + action + ")"
 
     #Ground the problem (e.g. generate all ground actions from lifted actions in domain)
     #Note do not use directly from pyperplan, something weird on the imports and it won't compile
@@ -137,7 +136,7 @@ def generate_gep_solution(row, data_folder):
         print(gep_solution_filepath)
         os.renames(solution_filename, gep_solution_filepath)
     else:
-        gep_solution_filename = "NA"#os.path.join(data_folder,'sas_plan1')#"NA"
+        gep_solution_filename = "NA"
 
     return gep_solution_filename
 
@@ -175,10 +174,10 @@ def gep_wcd_analysis(data_folder, data_file, domain_file, problem_file):
     grd_df = analyze_wcd(col_names, data_folder, data_file, domain_file, problem_file)
     print(len(grd_df))
     #   3.  generate a gep problem with init state from problem and goal state as disjunction of removed action’s (negated) preconditions.
-    grd_df['gep_problem'] = grd_df[['domain','problem','action_removed']].apply(generate_gep_problem, args=(data_folder,), axis=1)
+    grd_df['gep_problem'] = grd_df[['domain_filename',"problem_filename",'action_removed']].apply(generate_gep_problem, args=(data_folder,), axis=1)
         
     #   4.  solve the GEP problem (ie generate a plan)
-    grd_df['gep_solution'] = grd_df[['domain','gep_problem','action_removed']].apply(generate_gep_solution, args=(data_folder,), axis=1)
+    grd_df['gep_solution'] = grd_df[['domain_filename','gep_problem','action_removed']].apply(generate_gep_solution, args=(data_folder,), axis=1)
 
     #   5.  analyze the GEP solution (ie. number of steps)
     grd_df[['gep_solution_action_count','gep_solution_action_cost']] = grd_df[["gep_solution"]].apply(analyze_gep_solution, args=(data_folder,), axis=1, result_type='expand')
@@ -186,7 +185,7 @@ def gep_wcd_analysis(data_folder, data_file, domain_file, problem_file):
     return grd_df
 
 if __name__=="__main__": 
-    if False:#len(sys.argv) < 5:
+    if len(sys.argv) < 5:
         print("Usage: gep_analysis data_folder data_filename domain_filename hyp_problem_prefix")
         sys.exit()
     else:
@@ -196,15 +195,19 @@ if __name__=="__main__":
         hyp_problem_prefix = sys.argv[4]
 
         gep_wcd_analysis_df = pd.DataFrame()
-	#iterate through all the hypothesis problem files
+	
+        found_problem_file = False
+	#iterate through all the hypothesis problem files to get one that we can ground
         for problem_filename in os.listdir(data_folder):
-            if(problem_filename.endswith("pddl") and problem_filename[:len(hyp_problem_prefix)] == hyp_problem_prefix):
+            if(problem_filename.endswith("pddl") and problem_filename[:len(hyp_problem_prefix)] == hyp_problem_prefix and not(found_problem_file) ):
+                found_problem_file = True
                 #run the gep analysis pipeline
-                single_hyp_gep_wcd_analysis = gep_wcd_analysis(data_folder, data_filename, domain_filename, problem_filename)
-                gep_wcd_analysis_df = pd.concat([gep_wcd_analysis_df, single_hyp_gep_wcd_analysis])
-
+                gep_wcd_analysis_df = gep_wcd_analysis(data_folder, data_filename, domain_filename, problem_filename)
+         
         #Output to csv
-	#TODO filter columns, too much junk there now
+	#filter columns
+        output_cols = ["domain", "problem", "hyp_A", "hyp_B", "gep_solution_action_count", "gep_solution_action_cost", "curResFindWcd.wcd_value", "init_wcd", "min_wcd", "action_removed", "gep_solution", "wcd_calc_method"]
         output_filename = "gep_" + hyp_problem_prefix + "_all.csv"
-        print(os.path.join(data_folder, output_filename))
-        gep_wcd_analysis_df.to_csv( os.path.join(data_folder, output_filename) )        
+        print("-----------------------------------------------------------\n")
+        print("GEP analysis finished, check out the results here: " +os.path.join(data_folder, output_filename))
+        gep_wcd_analysis_df[output_cols].to_csv( os.path.join(data_folder, output_filename) )        

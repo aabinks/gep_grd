@@ -33,17 +33,17 @@ def gep_wcd_launch(grd_dir, domain_name):
 
         #TODO this block can probably be removed
 	#execute string
-        #exec_string = "./scripts/grd_evaluator_reduce " + os.path.join(gep_data_path, "domain.pddl") +" "+ os.path.join(problem_path, "template.pddl") + " " + os.path.join(problem_path, "hyps.dat") + " LatestSplit 1 NA NA True max NA"
+        exec_string = "./scripts/grd_evaluator_reduce " + os.path.join(gep_data_path, "domain.pddl") +" "+ os.path.join(problem_path, "template.pddl") + " " + os.path.join(problem_path, "hyps.dat") + " LatestSplit 1 NA NA True max NA"
 	#grd_evaluator.main(["grd_evaluator_reduce", os.path.join(gep_data_path, "domain.pddl"), os.path.join(problem_path, "template.pddl"), os.path.join(problem_path, "hyps.dat"), "LatestSplit", "1", "NA", "NA", "True", "max", "NA"])
         #exec_string = ["grd_evaluator_reduce", os.path.join(gep_data_path, "domain.pddl"), os.path.join(problem_path, "template.pddl"), os.path.join(problem_path, "hyps.dat"), "LatestSplit", "1", "NA", "NA", "True", "max", "NA"]
-	print(exec_string)
-	#subprocess.call(exec_string,cwd=grd_dir+"/scripts")
+        print(exec_string)
+        #subprocess.call(exec_string,cwd=grd_dir+"/scripts")
         
 	#TODO below doesn't work and issue #1 on this repo refers to the error from .main() below
-	#TODO also check the harded coded params below to make sure they are correct
+	#TODO also check the harded coded params below to make sure they are correct, we may want "all_pairs" instead of "max" for -v
         #python3 ./src/grd_evaluator.py -o $1 -p $2 -y $3 -c $4 -g $5 -b $6 -u $7 -f $8 -v $9 -a ${10}
-	exec_array = ["WcdReduce", "-o", os.path.join(gep_data_path, "domain.pddl"), "-p", os.path.join(problem_path, "template.pddl"), "-y", os.path.join(problem_path, "hyps.dat"), "-c", "LatestSplit", "-g", "1", "-b", "NA", "-u", "NA", "-f", "True", "-v", "max", "-a", "NA"]
-	grd_evaluator.main(exec_array)
+        exec_array = ["WcdReduce", "-o", os.path.join(gep_data_path, "domain.pddl"), "-p", os.path.join(problem_path, "template.pddl"), "-y", os.path.join(problem_path, "hyps.dat"), "-c", "LatestSplit", "-g", "1", "-b", "NA", "-u", "NA", "-f", "True", "-v", "max", "-a", "NA"]
+        grd_evaluator.main(exec_array)
 
         #move results and rename with timestamp
         timestr = time.strftime("%Y%m%d_%H%M%S")
@@ -53,7 +53,7 @@ def gep_wcd_launch(grd_dir, domain_name):
         shutil.make_archive(os.path.join(problem_path, timestr + "_log"), 'zip', log_files_path)
 
 if __name__=="__main__": 
-    if False:#len(sys.argv) < 3:
+    if len(sys.argv) < 3:
         print("Usage: gep_wcd_launch grd_path domain_name")
         sys.exit()
     else:
