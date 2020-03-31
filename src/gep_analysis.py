@@ -61,14 +61,14 @@ def load_data(data_filepath, col_names):
     return df
 
 
-def generate_gep_problem(row, data_folder):
+def generate_gep_problem(row, output_folder, data_folder):
     
     domain_filename = os.path.join(data_folder, row[0])
     problem_filename = os.path.join(data_folder, row[1])
     gep_action_removed  = row[2]
     
     gep_problem_filestring = "gep_" + gep_action_removed.strip().replace(" ","_").replace("(", "").replace(")", "")# + "_" + row[1]
-    gep_problem_filename = os.path.join(data_folder, gep_problem_filestring)
+    gep_problem_filename = os.path.join(output_folder, gep_problem_filestring)
     in_init = True
     
     with open(problem_filename) as problem_file:
@@ -118,13 +118,13 @@ def negated_action_preconditions_to_pddl_string(action_removed, domain_filename,
     return pddl_string
 
 
-def generate_gep_solution(row, data_folder):
+def generate_gep_solution(row, output_folder, data_folder):
 
     domain_filename = os.path.join(data_folder, row[0])
-    gep_problem_filename = os.path.join(data_folder, row[1])
+    gep_problem_filename = os.path.join(output_folder, row[1])
     
     #use grd_planning.py to call fast-downward planner
-    plan_cmd, planning_failed, signal = grd_planning.perform_planning(data_folder, domain_filename, gep_problem_filename, time_limit = grd_defs.DEFAULT_TIME_LIMIT, heuristic = 'lmcut()') #:#heuristic = 'ipdb()'):
+    plan_cmd, planning_failed, signal = grd_planning.perform_planning(output_folder, domain_filename, gep_problem_filename, time_limit = grd_defs.DEFAULT_TIME_LIMIT, heuristic = 'lmcut()') #:#heuristic = 'ipdb()'):
     
     #Change the solution plan name
     if (signal == 0):
@@ -140,9 +140,9 @@ def generate_gep_solution(row, data_folder):
 
     return gep_solution_filename
 
-def analyze_gep_solution(row, data_folder):
+def analyze_gep_solution(row, output_folder):
     
-    gep_solution_filename = os.path.join(data_folder,row[0])
+    gep_solution_filename = os.path.join(output_folder,row[0])
     action_count = 0
     action_cost = 0
     in_actions = True
@@ -165,22 +165,22 @@ def analyze_gep_solution(row, data_folder):
     return [action_count, action_cost]
 
 
-def gep_wcd_analysis(data_folder, data_file, domain_file, problem_file):
+def gep_wcd_analysis(output_folder, data_folder, data_file, domain_file, problem_file):
     
     # Obtained from grd git repo
     col_names = ["cur_grd_task.full_template_file_name","cur_grd_task.hyps_file_name","wcd_calc_method","budget_string","init_wcd","min_wcd","init_wcd_hyps"," opt_op_comb.getString()","wcd_calc_time","optimal_costs"," cur_exec_time"," explored_op_comb"," total_num_of_nodes_explored"," total_num_of_states_explored","reduction_per_budget_exhausted","curResFindWcd.wcd_value","op_comb.getString()","design_budget_array_string","cur_grd_task.observability_file_name","cur_grd_task.action_tokens_file_name","cur_grd_task.get_sub_optimal_bound_array_string()"]
 
     #   2.  parse GRD output to find get a list of action/reductions
     grd_df = analyze_wcd(col_names, data_folder, data_file, domain_file, problem_file)
-    print(len(grd_df))
+    
     #   3.  generate a gep problem with init state from problem and goal state as disjunction of removed action’s (negated) preconditions.
-    grd_df['gep_problem'] = grd_df[['domain_filename',"problem_filename",'action_removed']].apply(generate_gep_problem, args=(data_folder,), axis=1)
+    grd_df['gep_problem'] = grd_df[['domain_filename',"problem_filename",'action_removed']].apply(generate_gep_problem, args=(output_folder, data_folder,), axis=1)
         
     #   4.  solve the GEP problem (ie generate a plan)
-    grd_df['gep_solution'] = grd_df[['domain_filename','gep_problem','action_removed']].apply(generate_gep_solution, args=(data_folder,), axis=1)
+    grd_df['gep_solution'] = grd_df[['domain_filename','gep_problem','action_removed']].apply(generate_gep_solution, args=(output_folder, data_folder,), axis=1)
 
     #   5.  analyze the GEP solution (ie. number of steps)
-    grd_df[['gep_solution_action_count','gep_solution_action_cost']] = grd_df[["gep_solution"]].apply(analyze_gep_solution, args=(data_folder,), axis=1, result_type='expand')
+    grd_df[['gep_solution_action_count','gep_solution_action_cost']] = grd_df[["gep_solution"]].apply(analyze_gep_solution, args=(output_folder,), axis=1, result_type='expand')
     
     return grd_df
 
@@ -194,6 +194,10 @@ if __name__=="__main__":
         domain_filename = sys.argv[3]
         hyp_problem_prefix = sys.argv[4]
 
+        output_folder = os.path.join(data_folder, "gen_gep")
+        if (not(os.path.exists(output_folder))):
+                os.mkdir(output_folder)
+
         gep_wcd_analysis_df = pd.DataFrame()
 	
         found_problem_file = False
@@ -202,7 +206,7 @@ if __name__=="__main__":
             if(problem_filename.endswith("pddl") and problem_filename[:len(hyp_problem_prefix)] == hyp_problem_prefix and not(found_problem_file) ):
                 found_problem_file = True
                 #run the gep analysis pipeline
-                gep_wcd_analysis_df = gep_wcd_analysis(data_folder, data_filename, domain_filename, problem_filename)
+                gep_wcd_analysis_df = gep_wcd_analysis(output_folder, data_folder, data_filename, domain_filename, problem_filename)
          
         #Output to csv
 	#filter columns
