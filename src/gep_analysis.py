@@ -14,6 +14,7 @@ import grd_planning, grd_defs
 #import pyperplan._parse, pyperplan._ground
 from pddl.parser import Parser
 import grounding
+import io
 
 def get_problem_goals(problem_filepath):
     in_goal = False
@@ -60,36 +61,52 @@ def load_data(data_filepath, col_names):
     
     return df
 
+def format_pddl_to_filename(pddl):
+    return pddl.replace("(", "").replace(")", "").strip().replace(" ","_")
 
 def generate_gep_problem(row, output_folder, data_folder):
     
     domain_filename = os.path.join(data_folder, row[0])
     problem_filename = os.path.join(data_folder, row[1])
     gep_action_removed  = row[2]
-    
-    gep_problem_filestring = "gep_" + gep_action_removed.strip().replace(" ","_").replace("(", "").replace(")", "")# + "_" + row[1]
-    gep_problem_filename = os.path.join(output_folder, gep_problem_filestring)
+    gep_problem_filestring_prefix = "gep_hyp_" + format_pddl_to_filename(row[3]) + "_" + format_pddl_to_filename(row[4]) + "_act_" + format_pddl_to_filename(gep_action_removed)
+    gep_problem_filestrings = []
     in_init = True
     
+    #loop through each line in the problem file and add it to a file buffer as we may need to make multiple gep problem files
     with open(problem_filename) as problem_file:
-        with open(gep_problem_filename, "w") as gep_problem_file:
+            file_buff = io.StringIO()
             for line in problem_file:
-                line = line.strip()
+
+                #If we arrive at the goal, it is now time to generate one gep problem file per negated precondition of the removed action
                 if( "(:goal" in line):
                     in_init = False
-                    print(line, file = gep_problem_file)
-                    print("(and", file = gep_problem_file)
-                    gep_problem_goals = negated_action_preconditions_to_pddl_string(gep_action_removed, domain_filename, problem_filename) + "\n)\n)\n)\n"
-                    print(gep_problem_goals, file = gep_problem_file)
+                    file_buff.write(line)
+                    file_buff.write("(and")
+                    gep_problem_goals = negated_action_preconditions_to_pddl_string(gep_action_removed, domain_filename, problem_filename)# + "\n)\n)\n)\n"
+
+                    #for each negated precondition, setup the excessively long filename
+                    for gep_problem_goal in gep_problem_goals:
+                        gep_problem_filestring = gep_problem_filestring_prefix + "_pre_" + format_pddl_to_filename(gep_problem_goal)#.strip().replace(" ","_").replace("(", "").replace(")", "")
+                        gep_problem_filename = os.path.join(output_folder, gep_problem_filestring)
+                        gep_problem_filestrings.append(gep_problem_filestring)
+
+                        #create a new gep problem file and write the file buff contents and the unique precondition
+                        with open(gep_problem_filename, "w") as gep_problem_file:
+                            print(file_buff.getvalue(), file = gep_problem_file)
+                            print(gep_problem_goal + "\n)\n)\n)\n", file = gep_problem_file)
+
+                #for all other line sbeside the goal, just copy into file buffer
                 elif (in_init):
-                    print(line, file= gep_problem_file)
+                    file_buff.write(line)
+            file_buff.close()
                         
-    return gep_problem_filestring
+    return gep_problem_filestrings
 
 
 def negated_action_preconditions_to_pddl_string(action_removed, domain_filename, problem_filename):
     
-    pddl_string = ""
+    neg_pre_pddl_strings = []
     found_operator = False
 
     #Ground the problem (e.g. generate all ground actions from lifted actions in domain)
@@ -106,16 +123,14 @@ def negated_action_preconditions_to_pddl_string(action_removed, domain_filename,
         if (operator.name == action_removed):
             found_operator = True
             for precondition in operator.preconditions:
-		#TODO hack until figure this out, need new plannign problem per precondition?
-                if(precondition.split(" ")[0] == "(is_free"):
-                    pddl_string += "(not" + precondition + ") "
+                neg_pre_pddl_strings.append("(not " + precondition + ") ")
 
     #for some reason, operator not found in domain
     if not found_operator:
         #TODO something more elegant
-        pddl_string = "ERROR - Probably wrong problem for this hypothesis"
-        print(pddl_string)
-    return pddl_string
+        neg_pre_pddl_strings.append( "ERROR - Probably wrong problem")
+        print(neg_pre_pddl_strings)
+    return neg_pre_pddl_strings
 
 
 def generate_gep_solution(row, output_folder, data_folder):
@@ -136,18 +151,20 @@ def generate_gep_solution(row, output_folder, data_folder):
         print(gep_solution_filepath)
         os.renames(solution_filename, gep_solution_filepath)
     else:
-        gep_solution_filename = "NA"
+        gep_solution_filename = "NA"#"No Solution Found"
 
     return gep_solution_filename
 
 def analyze_gep_solution(row, output_folder):
     
     gep_solution_filename = os.path.join(output_folder,row[0])
-    action_count = 0
-    action_cost = 0
+    action_count = -1
+    action_cost = -1
     in_actions = True
     
-    if (os.path.exists(gep_solution_filename)):   
+    if (os.path.exists(gep_solution_filename)):
+        action_count = 0
+        action_cost = 0
         with open(gep_solution_filename) as file:
             for line in file:
             
@@ -174,8 +191,11 @@ def gep_wcd_analysis(output_folder, data_folder, data_file, domain_file, problem
     grd_df = analyze_wcd(col_names, data_folder, data_file, domain_file, problem_file)
     
     #   3.  generate a gep problem with init state from problem and goal state as disjunction of removed action’s (negated) preconditions.
-    grd_df['gep_problem'] = grd_df[['domain_filename',"problem_filename",'action_removed']].apply(generate_gep_problem, args=(output_folder, data_folder,), axis=1)
-        
+    grd_df['gep_problem'] = grd_df[['domain_filename',"problem_filename",'action_removed', "hyp_A", "hyp_B"]].apply(generate_gep_problem, args=(output_folder, data_folder,), axis=1)
+    
+    # since we have multiple gep_problems stored in the same column entry per action removal, expand it out
+    grd_df = grd_df.explode('gep_problem')
+    
     #   4.  solve the GEP problem (ie generate a plan)
     grd_df['gep_solution'] = grd_df[['domain_filename','gep_problem','action_removed']].apply(generate_gep_solution, args=(output_folder, data_folder,), axis=1)
 
@@ -210,8 +230,10 @@ if __name__=="__main__":
          
         #Output to csv
 	#filter columns
-        output_cols = ["domain", "problem", "hyp_A", "hyp_B", "gep_solution_action_count", "gep_solution_action_cost", "curResFindWcd.wcd_value", "init_wcd", "min_wcd", "action_removed", "gep_solution", "wcd_calc_method"]
+        output_cols = ["domain", "problem", "hyp_A", "hyp_B", "gep_solution_action_count", "gep_solution_action_cost", "curResFindWcd.wcd_value", "init_wcd", "min_wcd", "action_removed", "gep_problem", "gep_solution", "wcd_calc_method"]
         output_filename = "gep_" + hyp_problem_prefix + "_all.csv"
+        gep_wcd_analysis_df[output_cols].to_csv( os.path.join(data_folder, output_filename) )
+
         print("-----------------------------------------------------------\n")
-        print("GEP analysis finished, check out the results here: " +os.path.join(data_folder, output_filename))
-        gep_wcd_analysis_df[output_cols].to_csv( os.path.join(data_folder, output_filename) )        
+        print("GEP analysis finished, check out the results here:\n" + os.path.join(data_folder, output_filename))
+        print("-----------------------------------------------------------\n")       
