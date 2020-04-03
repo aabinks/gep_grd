@@ -37,7 +37,7 @@ def gep_wcd_launch(grd_dir, domain_name):
         problem_path = os.path.join(gep_data_path, problem_name)
         
 	#TODO check the harded coded params below to make sure they are correct, we may want "all_pairs" instead of "max" for -v
-        exec_array = [ "-o", os.path.join(gep_data_path, "domain.pddl"), "-p", os.path.join(problem_path, "template.pddl"), "-y", os.path.join(problem_path, "hyps.dat"), "-c", "WcdReduce-LatestSplit", "-g", "1", "-b", "NA", "-u", "NA", "-f", "True", "-v", "all_pairs", "-a", "NA"]
+        exec_array = [ "-o", os.path.join(problem_path, "domain.pddl"), "-p", os.path.join(problem_path, "template.pddl"), "-y", os.path.join(problem_path, "hyps.dat"), "-c", "WcdReduce-LatestSplit", "-g", "1", "-b", "NA", "-u", "NA", "-f", "True", "-v", "max", "-a", "NA"]
 
 	#For easy reference above
 	#print ( "-e  --experiment <file or folder>  Plan Recognition experiment files (tar'ed)",file =  sys.stderr)
