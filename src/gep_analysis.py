@@ -38,8 +38,8 @@ def analyze_wcd(col_names, data_folder, data_filename, domain_filename, problem_
     #parse and extract the action removal design modification from the unholy mess
     action_remove_index = 0
     wcd_df["action_removed"] = "(" + wcd_df["op_comb.getString()"].str.replace("[","").str.replace("]","").str.split("--", expand=True)[action_remove_index].str.strip() + ")"
-    wcd_df["problem"] = os.path.basename(os.path.dirname(data_folder))
-    wcd_df["domain"] = os.path.basename(os.path.dirname(os.path.dirname(data_folder)))
+    wcd_df["problem"] = os.path.basename(data_folder)
+    wcd_df["domain"] = os.path.basename(os.path.dirname(data_folder))
     wcd_df["domain_filename"] = domain_filename
     wcd_df["problem_filename"] = problem_filename
     
