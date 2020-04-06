@@ -21,6 +21,7 @@ def gep_wcd_launch(grd_dir, domain_name):
     log_files_path = os.path.join(grd_dir, "log_files")
     wcd_results_filename = "grd_log_reduction.txt"
     wcd_results_filepath = os.path.join(log_files_path, wcd_results_filename)
+    timestr = time.strftime("%Y%m%d_%H%M%S")
 
     #exit if we can't find the GEP destination for all WCD output
     if (not(os.path.exists(gep_data_path))):
@@ -68,7 +69,6 @@ def gep_wcd_launch(grd_dir, domain_name):
         grd_evaluator.evaluate(options)
 
         #move results and rename with timestamp
-        timestr = time.strftime("%Y%m%d_%H%M%S")
         shutil.copyfile(wcd_results_filepath, os.path.join(problem_path, timestr + "_" + wcd_results_filename) )
         shutil.make_archive(os.path.join(problem_path, timestr + "_gen"), 'zip', gen_files_path)
         shutil.make_archive(os.path.join(problem_path, timestr + "_log"), 'zip', log_files_path)
