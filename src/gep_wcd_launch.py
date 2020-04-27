@@ -2,7 +2,7 @@ __author__ = 'Adam Amos-Binks'
 
 '''
 Created on March 25, 2020
-Launch WCD for a all problems of a domain and save output in GEP locations
+Launch WCD for all problems of a domain and save output in GEP locations
 @author: adamab
 '''
 
@@ -19,8 +19,11 @@ def gep_wcd_launch(grd_dir, domain_name):
     gep_data_path = os.path.join(*[grd_dir, "gep", "data", domain_name])
     gen_files_path = os.path.join(grd_dir, "gen_files")
     log_files_path = os.path.join(grd_dir, "log_files")
-    wcd_results_filename = "grd_log_reduction.txt"
+    wcd_log_results_filename = "grd_log_reduction.txt"
+    wcd_log_results_filepath = os.path.join(log_files_path, wcd_log_results_filename)
+    wcd_results_filename = "grd_results.txt"
     wcd_results_filepath = os.path.join(log_files_path, wcd_results_filename)
+
     timestr = time.strftime("%Y%m%d_%H%M%S")
 
     #exit if we can't find the GEP destination for all WCD output
@@ -34,11 +37,20 @@ def gep_wcd_launch(grd_dir, domain_name):
 
     #loop through each problem and call run the GRD process for WCD
     for problem_dir in problem_dirs:
+
+        #Remove previous log files
+        if os.path.exists(wcd_results_filepath):
+            os.remove(wcd_results_filepath)
+
+        #Remove previous log files
+        if os.path.exists(wcd_log_results_filepath):
+            os.remove(wcd_log_results_filepath)
+
         problem_name = os.path.basename(problem_dir).split(".")[0]
         problem_path = os.path.join(gep_data_path, problem_name)
         
 	#TODO check the harded coded params below to make sure they are correct, we may want "all_pairs" instead of "max" for -v
-        exec_array = [ "-o", os.path.join(problem_path, "domain.pddl"), "-p", os.path.join(problem_path, "template.pddl"), "-y", os.path.join(problem_path, "hyps.dat"), "-c", "WcdReduce-LatestSplit", "-g", "1", "-b", "NA", "-u", "NA", "-f", "True", "-v", "max", "-a", "NA"]
+        exec_array = [ "-o", os.path.join(problem_path, "domain.pddl"), "-p", os.path.join(problem_path, "template.pddl"), "-y", os.path.join(problem_path, "hyps.dat"), "-c", "WcdReduce-LatestSplit", "-g", "1", "-b", "NA", "-u", "3:3:3", "-f", "True", "-v", "max", "-a", "NA"]
 
 	#For easy reference above
 	#print ( "-e  --experiment <file or folder>  Plan Recognition experiment files (tar'ed)",file =  sys.stderr)
@@ -69,9 +81,12 @@ def gep_wcd_launch(grd_dir, domain_name):
         grd_evaluator.evaluate(options)
 
         #move results and rename with timestamp
-        shutil.copyfile(wcd_results_filepath, os.path.join(problem_path, timestr + "_" + wcd_results_filename) )
         shutil.make_archive(os.path.join(problem_path, timestr + "_gen"), 'zip', gen_files_path)
-        shutil.make_archive(os.path.join(problem_path, timestr + "_log"), 'zip', log_files_path)
+        #shutil.make_archive(os.path.join(problem_path, timestr + "_log"), 'zip', log_files_path)
+
+        #since these files are appended to by GRD, and we end up wanting them all in the same place anyway, move them to the domain level
+        shutil.copyfile(wcd_results_filepath, os.path.join(problem_path, timestr + "_" + wcd_results_filename) )
+        shutil.copyfile(wcd_log_results_filepath, os.path.join(problem_path, timestr + "_" + wcd_log_results_filename) )
 
 if __name__=="__main__":
 

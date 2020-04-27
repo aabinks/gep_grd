@@ -236,7 +236,7 @@ if __name__=="__main__":
         #Output to csv
 	#filter columns
         output_cols = ["domain", "problem", "hyp_A", "hyp_B", "gep_solution_action_count", "gep_solution_action_cost", "curResFindWcd.wcd_value", "init_wcd", "min_wcd", "action_removed", "gep_problem_precondition", "gep_problem", "gep_solution", "wcd_calc_method"]
-        output_filename = "gep_" + hyp_problem_prefix + "_all.csv"
+        output_filename = "_".join(data_filename.split("_")[:2]) + "_gep_" + hyp_problem_prefix + "_all.csv"
         gep_wcd_analysis_df[output_cols].to_csv( os.path.join(data_folder, output_filename) )
 
         print("-----------------------------------------------------------\n")
