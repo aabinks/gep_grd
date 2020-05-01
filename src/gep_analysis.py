@@ -117,7 +117,7 @@ def negated_action_preconditions_to_pddl_string(action_removed, domain_filename,
     problem = parser.parse_problem(domain)
     task = grounding.ground(problem)
 
-    print("Number of ground actions in " + problem_filename +": " str(len(task.operators)))
+    print("Number of ground actions in " + problem_filename +": " + str(len(task.operators)))
 	
     #iterate through ground actions (operators)
     for operator in task.operators:
