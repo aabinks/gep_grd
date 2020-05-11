@@ -6,6 +6,14 @@ Analyze contents of a WCD results file and compare against GEP method
 @author: adamab
 '''
 
+#imports__author__ = 'Adam Amos-Binks'
+
+'''
+Created on April 3, 2020
+Analyze contents of a WCD results file and compare against GEP method
+@author: adamab
+'''
+
 #imports
 import pandas as pd
 import sys
@@ -33,7 +41,7 @@ def gep_overall_min_wcd_hist(gep_df, output_filepath_prefix, budget):
     
     #Set general plot properties
     sns.set_style("white")
-    sns.set_context({"figure.figsize": (24, 10)})
+    sns.set_context({"figure.figsize": (14, 5)})
     
     #plot
     gep_grd_init_bar_plot = sns.barplot(x = melt_df["problem"], y = melt_df["action_cost"], hue=melt_df["method"], hue_order=["min_wcd", "gep_min_wcd", "init_wcd"])    
@@ -43,14 +51,14 @@ def gep_overall_min_wcd_hist(gep_df, output_filepath_prefix, budget):
     gep_grd_init_bar_plot.legend(h, ['GRD WCD Reduction', 'GEP WCD Reduction', 'Initial (No Reduction)'], prop={'size':24})
     sns.despine(left=True)
     gep_grd_init_bar_plot.set_ylabel("Minimum WCD")
-    gep_grd_init_bar_plot.set_xlabel("Problems in easy-grid benchmarks")
+    gep_grd_init_bar_plot.set_xlabel("Problems in easy-grid$^{\prime}$")
 
     #Again, optional - set fonts to consistent 16pt size
     for item in ([gep_grd_init_bar_plot.xaxis.label, gep_grd_init_bar_plot.yaxis.label] +
                  gep_grd_init_bar_plot.get_xticklabels() + gep_grd_init_bar_plot.get_yticklabels()):
         item.set_fontsize(24)
 
-    output_filepath = output_filepath_prefix+"_overall_min_wcd.png"
+    output_filepath = output_filepath_prefix + "_budget_" + str(non_opt_budget) + "_overall_min_wcd.png"
     fig = gep_grd_init_bar_plot.get_figure()
     fig.savefig(output_filepath, dpi=400)
     print("Just saved: " + output_filepath)
@@ -59,7 +67,7 @@ def gep_overall_min_wcd_hist(gep_df, output_filepath_prefix, budget):
     ######################
 def gep_action_min_wcd_hist(gep_df, output_filepath_prefix, budget):
 
-    sns.set_context({"figure.figsize": (24, 10)})
+    sns.set_context({"figure.figsize": (14, 5)})
     chart2, ax2 = plt.subplots()
         
     #Groupby to get the min WCD for each action removal (removes multiple GEP problems/solutions)
@@ -92,15 +100,15 @@ def gep_action_min_wcd_hist(gep_df, output_filepath_prefix, budget):
     h, l = gep_grd_action_hist.get_legend_handles_labels()
     gep_grd_action_hist.legend(h, ['GRD WCD Reduction', 'GEP WCD Reduction'], prop={'size':24})
     sns.despine(left=True)
-    gep_grd_action_hist.set_ylabel("Actions That Achieve the Min WCD")
-    gep_grd_action_hist.set_xlabel("Problems in easy-grid benchmarks")
+    gep_grd_action_hist.set_ylabel("Min WCD Action Removals")
+    gep_grd_action_hist.set_xlabel("Problems in easy-grid$^{\prime}$")
 
     #Again, optional - set fonts to consistent 16pt size
     for item in ([gep_grd_action_hist.xaxis.label, gep_grd_action_hist.yaxis.label] +
                  gep_grd_action_hist.get_xticklabels() + gep_grd_action_hist.get_yticklabels()):
         item.set_fontsize(24)    
     
-    output_filepath = output_filepath_prefix+"_action_min_wcd.png"
+    output_filepath = output_filepath_prefix+ "_budget_" + str(non_opt_budget) + "_action_min_wcd.png"
     fig = gep_grd_action_hist.get_figure()
     fig.savefig(output_filepath, dpi=400)
     print("Just saved: " + output_filepath)
@@ -122,7 +130,7 @@ def gep_plot(data_filepath, output_filepath_prefix, budget=0):
     return plot_names
     
 if __name__=="__main__": 
-    if False:#len(sys.argv) < 3:
+    if len(sys.argv) < 3:
         print("Usage: gep_plots data_filepath non_opt_budget" )
         sys.exit()
     else:
