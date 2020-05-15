@@ -13,26 +13,39 @@ import sys
 import grd_evaluator
 import grd_options
 
-def gep_wcd_launch(grd_dir, domain_name):
+def gep_wcd_launch(domain_dir, budget, hyps):
+
+    #exit if we can't find the domain
+    if (not(os.path.exists(domain_dir))):
+        print("Exiting, can't find: " + domain_dir)
+        sys.exit(0)
+    
+    domain_name = os.path.basename(domain_dir)    
 
     #setup filenames and directories for output and copying
-    gep_data_path = os.path.join(*[grd_dir, "gep", "data", domain_name])
-    gen_files_path = os.path.join(grd_dir, "gen_files")
-    log_files_path = os.path.join(grd_dir, "log_files")
+    gep_data_path = domain_dir#os.path.join(*[grd_dir, "gep", "data", domain_name])
+    gen_files_path = os.path.join(os.getcwd(), "gen_files")
+    log_files_path = os.path.join(os.getcwd(), "log_files")
     wcd_log_results_filename = "grd_log_reduction.txt"
     wcd_log_results_filepath = os.path.join(log_files_path, wcd_log_results_filename)
     wcd_results_filename = "grd_results.txt"
     wcd_results_filepath = os.path.join(log_files_path, wcd_results_filename)
 
     timestr = time.strftime("%Y%m%d_%H%M%S")
-
-    #exit if we can't find the GEP destination for all WCD output
-    if (not(os.path.exists(gep_data_path))):
-        print("Exiting, can't find: " + gep_data_path)
+    budget_string = budget + ":" + budget + ":" + budget
+    if (hyps not in ["max", "all_pairs"]):
+        print("Exiting, hyps needs to be 'all_pairs' or 'max' but it is: " + hyps)
         sys.exit(0)
+
+    gep_results_path = os.path.join(*[domain_dir, "results", domain_name + "_" + timestr])
+    #Create destination for all WCD output
+    if (not(os.path.exists(gep_results_path))):
+        print("Creating: " + gep_results_path)
+        os.makedirs(gep_results_path, exist_ok=True)
 
     #get all the problems in the domain's directory
     problem_dirs = [x[1] for x in os.walk(gep_data_path)][0]
+    problem_dirs.remove("results")
     print("Running grd_evaluator_reduce for domain: " + domain_name + " and problems: " + ", ".join(problem_dirs))
 
     #loop through each problem and call run the GRD process for WCD
@@ -48,9 +61,9 @@ def gep_wcd_launch(grd_dir, domain_name):
 
         problem_name = os.path.basename(problem_dir).split(".")[0]
         problem_path = os.path.join(gep_data_path, problem_name)
-        
+ 
 	#TODO check the harded coded params below to make sure they are correct, we may want "all_pairs" instead of "max" for -v
-        exec_array = [ "-o", os.path.join(problem_path, "domain.pddl"), "-p", os.path.join(problem_path, "template.pddl"), "-y", os.path.join(problem_path, "hyps.dat"), "-c", "WcdReduce-LatestSplit", "-g", "1", "-b", "NA", "-u", "3:3:3", "-f", "True", "-v", "max", "-a", "NA"]
+        exec_array = [ "-o", os.path.join(problem_path, "domain.pddl"), "-p", os.path.join(problem_path, "template.pddl"), "-y", os.path.join(problem_path, "hyps.dat"), "-c", "WcdReduce-LatestSplit", "-g", "1", "-b", "NA", "-u", budget_string, "-f", "True", "-v", hyps, "-a", "NA"]
 
 	#For easy reference above
 	#print ( "-e  --experiment <file or folder>  Plan Recognition experiment files (tar'ed)",file =  sys.stderr)
@@ -80,21 +93,22 @@ def gep_wcd_launch(grd_dir, domain_name):
         options = grd_options.Program_Options( exec_array )
         grd_evaluator.evaluate(options)
 
+        filename_prefix = "_".join([timestr, problem_name, budget, hyps])
         #move results and rename with timestamp
-        shutil.make_archive(os.path.join(problem_path, timestr + "_gen"), 'zip', gen_files_path)
+        shutil.make_archive(os.path.join(gep_results_path, filename_prefix + "_gen"), 'zip', gen_files_path)
         #shutil.make_archive(os.path.join(problem_path, timestr + "_log"), 'zip', log_files_path)
 
         #since these files are appended to by GRD, and we end up wanting them all in the same place anyway, move them to the domain level
-        shutil.copyfile(wcd_results_filepath, os.path.join(problem_path, timestr + "_" + wcd_results_filename) )
-        shutil.copyfile(wcd_log_results_filepath, os.path.join(problem_path, timestr + "_" + wcd_log_results_filename) )
+        shutil.copyfile(wcd_results_filepath, os.path.join(gep_results_path, filename_prefix + "_" + wcd_results_filename) )
+        shutil.copyfile(wcd_log_results_filepath, os.path.join(gep_results_path, filename_prefix + "_" + wcd_log_results_filename) )
 
 if __name__=="__main__":
 
-    if len(sys.argv) < 3:
-        print("Usage: gep_wcd_launch grd_path domain_name")
+    if len(sys.argv) < 4:
+        print("Usage: gep_wcd_launch domain_path budget hyps")
         sys.exit()
     else:
-        grd_path = sys.argv[1]
-        domain_name = sys.argv[2]
-
-        gep_wcd_launch(grd_path, domain_name)
+        domain_path = sys.argv[1]
+        budget = sys.argv[2]
+        hyps = sys.argv[3]
+        gep_wcd_launch(domain_path, budget, hyps)
