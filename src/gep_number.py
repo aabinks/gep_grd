@@ -24,7 +24,7 @@ def get_ground_task(domain_filepath, problem_filepath):
     
     return task
 
-def gep_number(ground_task):
+def get_gep_number(ground_task):
     
     effects = []
     gep_number = 0
