@@ -15,13 +15,7 @@ import grd_planning, grd_defs
 from pddl.parser import Parser
 import grounding
 import io
-
-def get_ground_task(domain_filename, problem_filename):
-    parser = Parser(domain_filename, problem_filename)
-    domain = parser.parse_domain()
-    problem = parser.parse_problem(domain)
-    task = grounding.ground(problem)
-    return task
+import gep_number
 
 def get_problem_goals(problem_filepath):
     in_goal = False
@@ -72,19 +66,8 @@ def load_data(data_filepath, col_names):
 def format_pddl_to_filename(pddl):
     return pddl.replace("(", "").replace(")", "").strip().replace(" ","_")
 
-def get_gep_number(task):
 
-    #iterate through ground actions (operators)
-#    for operator in task.operators:
-        #if we have found the removed operator, concatenate its preconditions in a string
-#        if (operator.name == action_removed):
-#            found_operator = True
-#            for precondition in operator.preconditions:
-
-    print("Number of ground actions is: " + str(len(task.operators)))
-    return str(len(task.operators))
-
-def generate_gep_problem(row, output_folder, problem_folder):
+def generate_gep_problem(row, output_folder, problem_folder, task):
     
     domain_filename = os.path.join(problem_folder, row[0])
     problem_filename = os.path.join(problem_folder, row[1])
@@ -104,7 +87,7 @@ def generate_gep_problem(row, output_folder, problem_folder):
                     in_init = False
                     file_buff.write(line)
                     file_buff.write("(and")
-                    gep_problem_goals = negated_action_preconditions_to_pddl_string(gep_action_removed, domain_filename, problem_filename)
+                    gep_problem_goals = negated_action_preconditions_to_pddl_string(gep_action_removed, task)#domain_filename, problem_filename)
 
                     #for each negated precondition, setup the excessively long filename
                     for gep_problem_goal in gep_problem_goals:
@@ -125,17 +108,17 @@ def generate_gep_problem(row, output_folder, problem_folder):
     return gep_problem_precondition_filestring_pairs
 
 
-def negated_action_preconditions_to_pddl_string(action_removed, domain_filename, problem_filename):
+def negated_action_preconditions_to_pddl_string(action_removed, task)#domain_filename, problem_filename):
     
     neg_pre_pddl_strings = []
     found_operator = False
 
     #Ground the problem (e.g. generate all ground actions from lifted actions in domain)
     #Note: do not use directly from pyperplan, something weird on the imports and it won't compile
-    parser = Parser(domain_filename, problem_filename)
-    domain = parser.parse_domain()
-    problem = parser.parse_problem(domain)
-    task = grounding.ground(problem)
+#     parser = Parser(domain_filename, problem_filename)
+#     domain = parser.parse_domain()
+#     problem = parser.parse_problem(domain)
+#     task = grounding.ground(problem)
 	
     #iterate through ground actions (operators)
     for operator in task.operators:
@@ -213,7 +196,7 @@ def gep_wcd_analysis(output_folder, problem_folder, data_filepath, domain_filena
     print("Analyzing GRD output with length: " + str(len(grd_df)))
     
     #   3.  generate a gep problem with init state from problem and goal state as disjunction of removed action’s (negated) preconditions.
-    grd_df['gep_problem_pre_file'] = grd_df[['domain_filename',"problem_filename",'action_removed', "hyp_A", "hyp_B"]].apply(generate_gep_problem, args=(output_folder, problem_folder,), axis=1)
+    grd_df['gep_problem_pre_file'] = grd_df[['domain_filename',"problem_filename",'action_removed', "hyp_A", "hyp_B"]].apply(generate_gep_problem, args=(output_folder, problem_folder, task,), axis=1)
     
     # since we have multiple gep_problems stored in the same column entry per action removal, expand it out
     grd_df = grd_df.explode('gep_problem_pre_file')
