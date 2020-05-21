@@ -24,7 +24,7 @@ def get_ground_task(domain_filepath, problem_filepath):
     
     return task
 
-def get_gep_number(ground_task):
+def get_gep_number(task):
     
     effects = []
     gep_number = 0
@@ -33,7 +33,7 @@ def get_gep_number(ground_task):
     #iterate through ground actions (operators)
     for operator in task.operators:
         for effect in operator.preconditions:
-            effects.append()
+            effects.append(effect)
   
     for operator in task.operators:
         already_counted = False
@@ -46,21 +46,24 @@ def get_gep_number(ground_task):
 
 def gep_number_matrix(domain_path):
     dirs = [x[1] for x in os.walk(os.path.dirname(domain_path))][0]
-    problem_names = [dir if dir.beginswith("p") for dir in dirs]
+    problem_names = [directory for directory in dirs if directory.startswith("p") ]
     #problem_dirs.remove("results")
     #problem_dirs.remove("domains")
-    gep_results_df = pd.Dataframe()
+    gep_results_df = pd.DataFrame(columns=["domain", "problem", "gep_number"])
 
     #check output dir
     for domain_file in os.listdir(domain_path):
         if (domain_file.endswith(".pddl")):
             for problem_name in problem_names:
-                problem_filepath = os.path.join(*[os.path.dirname(domain_path),problem_name,"hyp_0.pddl" ])
-                task = get_ground_task(domain_filepath, problem_filepath)
-                gep_number = gep_number(task)      
-                gep_results_df = pd.concat([gep_results_df, pd.Dataframe(data={"domain":domain_file.split(".")[0], "problem":problem_name, "gep_number":gep_number})])
+                problem_filepath = os.path.join(*[os.path.dirname(domain_path),problem_name,"hyp_0_problem.pddl" ])
+                task = get_ground_task(os.path.join(domain_path,domain_file), problem_filepath)
+                gep_number = get_gep_number(task)
+                d = {"domain":[domain_file.split(".")[0]], "problem":[problem_name], "gep_number":[gep_number]}
+                gep_number_df = pd.DataFrame(data=d)
+                gep_results_df = pd.concat([gep_results_df, gep_number_df])
 
-    gep_matrix_df = gep_results_df.pivot(columns="problem", values="gep_number")
+    print(gep_results_df.reset_index(drop=True))
+    gep_matrix_df = gep_results_df.reset_index(drop=True).pivot(index='domain', columns="problem", values="gep_number").reset_index()
     
     return gep_matrix_df
     

@@ -43,7 +43,7 @@ def analyze_wcd(col_names, problem_folder, data_filepath, domain_filename, probl
     wcd_df["domain"] = os.path.basename(os.path.dirname(problem_folder))
     wcd_df["domain_filename"] = domain_filename
     wcd_df["problem_filename"] = problem_filename
-    wcd_df["gep_number"] = get_gep_number(task)
+    wcd_df["gep_number"] = gep_number.get_gep_number(task)
     
     #extract hypothesis
     wcd_df[["hyp_A","hyp_B"]] =  wcd_df["init_wcd_hyps"].str.split("'", expand=True)[[1,3]]
@@ -108,7 +108,7 @@ def generate_gep_problem(row, output_folder, problem_folder, task):
     return gep_problem_precondition_filestring_pairs
 
 
-def negated_action_preconditions_to_pddl_string(action_removed, task)#domain_filename, problem_filename):
+def negated_action_preconditions_to_pddl_string(action_removed, task):#domain_filename, problem_filename):
     
     neg_pre_pddl_strings = []
     found_operator = False
@@ -187,7 +187,7 @@ def analyze_gep_solution(row, output_folder):
 
 def gep_wcd_analysis(output_folder, problem_folder, data_filepath, domain_filename, problem_filename):
     
-    task = get_ground_task(os.path.join(problem_folder, domain_filename), os.path.join(problem_folder, problem_filename))
+    task = gep_number.get_ground_task(os.path.join(problem_folder, domain_filename), os.path.join(problem_folder, problem_filename))
     # Obtained from grd git repo
     col_names = ["cur_grd_task.full_template_file_name","cur_grd_task.hyps_file_name","wcd_calc_method","budget_string","init_wcd","min_wcd","init_wcd_hyps"," opt_op_comb.getString()","wcd_calc_time","optimal_costs"," cur_exec_time"," explored_op_comb"," total_num_of_nodes_explored"," total_num_of_states_explored","reduction_per_budget_exhausted","curResFindWcd.wcd_value","op_comb.getString()","design_budget_array_string","cur_grd_task.observability_file_name","cur_grd_task.action_tokens_file_name","cur_grd_task.get_sub_optimal_bound_array_string()"]
 

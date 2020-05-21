@@ -46,7 +46,7 @@ def gep_wcd_launch(domain_dir, budget, hyps):
     #get all the problems in the domain's directory
     dirs = [x[1] for x in os.walk(gep_data_path)][0]
     #problem_dirs.remove("results")
-    problem_dirs = [dir if dir.beginswith("p") for dir in dirs]
+    problem_dirs = [directory for directory in dirs if directory.startswith("p") ]
     print("Running grd_evaluator_reduce for domain: " + domain_name + " and problems: " + ", ".join(problem_dirs))
 
     #loop through each problem and call run the GRD process for WCD
