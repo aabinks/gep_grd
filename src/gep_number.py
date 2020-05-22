@@ -1,9 +1,9 @@
-__author__ = 'Adam Amos-Binks'
+__author__ = 'Anonymous for peer review'
 
 '''
 Created on May 18, 2020
 Utility to investigate how domain changes affect GEP number
-@author: adamab
+@author: anon
 '''
 
 #imports
