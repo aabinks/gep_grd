@@ -1,17 +1,9 @@
-__author__ = 'Adam Amos-Binks'
+__author__ = 'Anonymous for peer review'
 
 '''
 Created on April 3, 2020
 Analyze contents of a WCD results file and compare against GEP method
-@author: adamab
-'''
-
-#imports__author__ = 'Adam Amos-Binks'
-
-'''
-Created on April 3, 2020
-Analyze contents of a WCD results file and compare against GEP method
-@author: adamab
+@author: anon
 '''
 
 #imports
