@@ -10,8 +10,7 @@ Utility to investigate how domain changes affect GEP number
 import pandas as pd
 import sys
 import os
-import grd_planning, grd_defs
-#import pyperplan._parse, pyperplan._ground
+import grd_planning
 from pddl.parser import Parser
 import grounding
 import time
@@ -26,19 +25,22 @@ def get_ground_task(domain_filepath, problem_filepath):
 
 def get_gep_number(task):
     
-    effects = []
+    effects = {}
     gep_number = 0
     already_counted = False
   
     #iterate through ground actions (operators)
     for operator in task.operators:
-        for effect in operator.preconditions:
-            effects.append(effect)
-  
+        for effect in operator.del_effects:
+            if (effect in effects.keys()):
+                effects[effect].add(operator)
+            else:
+                effects[effect] = {operator}
+
     for operator in task.operators:
         already_counted = False
         for precondition in operator.preconditions:
-            if (precondition in effects and not(already_counted)):
+            if (not(already_counted) and precondition in effects and operator not in effects[precondition]):
                 gep_number += 1
                 already_counted = True
 
