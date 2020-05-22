@@ -4,14 +4,12 @@ Objective:
 
 Goal Elicitation Planning (GEP) is the task of acting in an environment using Goal Recognition Design information (e.g. WCD) to faciliate online goal recognition.
 
-GEP Code structure:
+To run experiment from ACS 2020 GEP Code structure:
 ==============
-Step 0: Install fast-downward in src/3rdparty/downward, install pandas package in python
-Step 1: Ensure your domain has actions that contain preconditions that can be negated by other actions. This ensures actions taken by one agent can blok another agent.
-Step 2: Modify domain.pddl and template.pddl, possibly hyp_X_problem.pddl if using from bencmarks folder
-Step 3: Run grd_evaluator with only aciton removal design mods on each domain-problem pair, make copies of grd_log_reduction.txt between each run (or fix gep_wcd_launch to do this all automatically)
-Step 4: Run gep_analysis.py to analyze the results in grd_log_reduction.txt (may now hav a time prefix if copied using script) for each hypothesis problem
-Step 5: Take a look at the gep_hyp_all.csv to see if online actions can achieve the same WCD reduction as GRD(above step will eventually generate a summary file)
+Step 0: Install fast-downward in src/3rdparty/downward, install pandas package for python
+Step 1: Run 'python ./src/gep_wcd_launch.py /FULLPATH_TO_GEP_GRD_DIR/gep/data/easy-grid 0 max'
+Step 2: Run 'python ./src/gep_analysis.py /FULLPATH_TO_GEP_GRD_DIR/gep/data/easy-grid/results/GENERATED_NAME_FROM_STEP_1'
+Step 3: Run 'python ./src/gep_plots.py  /FULLPATH_TO_GEP_GRD_DIR/gep/data/easy-grid/results/GENERATED_NAME_FROM_STEP_1/GENERATED_NAME_FROM_STEP_1_gep_all_probs.csv'
 
 Note: currently only gep/data/easy-grid-problem/p0X has modificatons made to the domain that allows GEP to run successfully. So only run the above steps using the domain/problems found there, OK?
 
