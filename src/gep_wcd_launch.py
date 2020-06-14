@@ -1,9 +1,9 @@
-__author__ = 'Adam Amos-Binks'
+__author__ = 'Anonymous'
 
 '''
 Created on March 25, 2020
 Launch WCD for all problems of a domain and save output in GEP locations
-@author: adamab
+@author: anon
 '''
 
 import os
